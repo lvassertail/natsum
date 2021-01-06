@@ -332,6 +332,9 @@ def validate_and_save(
         )
     ) and not cfg.dataset.disable_validation
 
+    # if there is a need to validate and we should keep the N>0 best checkpoints then "do_save" should be "on" anyway
+    do_save = do_save or (do_validate and cfg.checkpoint.keep_best_checkpoints > 0)
+
     # Validate
     valid_losses = [None]
     if do_validate:
