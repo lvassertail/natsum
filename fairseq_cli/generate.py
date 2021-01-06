@@ -24,6 +24,8 @@ from fairseq.logging import progress_bar
 from fairseq.logging.meters import StopwatchMeter, TimeMeter
 from omegaconf import DictConfig
 
+import files2rouge
+
 
 def main(cfg: DictConfig):
 
@@ -182,6 +184,13 @@ def _main(cfg: DictConfig, output_file):
 
     scorer = scoring.build_scorer(cfg.scoring, tgt_dict)
 
+    if cfg.common_eval.calc_rouge:
+        model_path = os.path.dirname(cfg.common_eval.path)
+        hypos_path = os.path.join(model_path, 'hypos.txt')
+        targets_path = os.path.join(model_path, 'targets.txt')
+        hypos_file = open(hypos_path, 'w', buffering=1, encoding='utf8')
+        targets_file = open(targets_path, 'w', buffering=1, encoding='utf8')
+
     num_sentences = 0
     has_target = True
     wps_meter = TimeMeter()
@@ -258,6 +267,9 @@ def _main(cfg: DictConfig, output_file):
                     print("S-{}\t{}".format(sample_id, src_str), file=output_file)
                 if has_target:
                     print("T-{}\t{}".format(sample_id, target_str), file=output_file)
+
+            if targets_file is not None:
+                print(target_str, file=targets_file)
 
             # Process top predictions
             for j, hypo in enumerate(hypos[i][: cfg.generation.nbest]):
@@ -361,6 +373,8 @@ def _main(cfg: DictConfig, output_file):
                         scorer.add_string(target_str, detok_hypo_str)
                     else:
                         scorer.add(target_tokens, hypo_tokens)
+                    if hypos_file is not None:
+                        print(detok_hypo_str, file=hypos_file)
 
         wps_meter.update(num_generated_tokens)
         progress.log({"wps": round(wps_meter.avg)})
@@ -395,6 +409,11 @@ def _main(cfg: DictConfig, output_file):
             ),
             file=output_file,
         )
+
+        if cfg.common_eval.calc_rouge:
+            targets_file.close()
+            hypos_file.close()
+            files2rouge.run(hypos_path, targets_path)
 
     return scorer
 

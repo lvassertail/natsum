@@ -863,6 +863,12 @@ class CommonEvalConfig(FairseqDataclass):
     results_path: Optional[str] = field(
         default=None, metadata={"help": "path to save eval results (optional)"}
     )
+    calc_rouge: bool = field(
+        default=False,
+        metadata={
+            "help": "print hypos and targets to files (in the model's path), and calculate the rouge score"
+        },
+    )
 
 
 @dataclass
